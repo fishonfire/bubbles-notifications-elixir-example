@@ -23,6 +23,8 @@ end
 config :bubbles_hex_user, BubblesHexUserWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+config :bubbles_notifications, base_url: "http://localhost:4000"
+
 if config_env() == :dev do
   # Reload browser tabs when matching files change.
   config :bubbles_hex_user, BubblesHexUserWeb.Endpoint,

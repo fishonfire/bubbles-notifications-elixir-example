@@ -1,0 +1,196 @@
+<Layouts.app flash={@flash}>
+  <section class="space-y-8">
+    <div class="overflow-hidden rounded-4xl border border-base-300 bg-linear-to-br from-base-100 via-base-100 to-base-200 shadow-xl shadow-base-300/30">
+      <div class="space-y-6 px-6 py-8 sm:px-8 sm:py-10">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div class="space-y-3">
+            <div class="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-primary">
+              <.icon name="hero-paper-airplane" class="size-4" /> Push notifications
+            </div>
+            <div class="space-y-2">
+              <h1 class="text-3xl font-semibold tracking-tight text-base-content sm:text-4xl">
+                Send a notification
+              </h1>
+              <p class="max-w-2xl text-sm leading-6 text-base-content/70 sm:text-base">
+                Fill in the notification details, app ID, and auth token to send a push message through the local
+                <code>bubbles_notifications</code>
+                package.
+              </p>
+            </div>
+          </div>
+
+          <div class={[
+            "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium shadow-sm transition-colors",
+            @notification_base_url_configured? &&
+              "border border-success/20 bg-success/10 text-success",
+            !@notification_base_url_configured? &&
+              "border border-warning/20 bg-warning/10 text-warning"
+          ]}>
+            <.icon
+              name={
+                if(@notification_base_url_configured?,
+                  do: "hero-check-circle",
+                  else: "hero-exclamation-triangle"
+                )
+              }
+              class="size-5"
+            />
+            {if(@notification_base_url_configured?,
+              do: "API endpoint configured",
+              else: "API endpoint missing"
+            )}
+          </div>
+        </div>
+
+        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <div class="rounded-2xl border border-base-300 bg-base-100/80 px-5 py-4 text-sm text-base-content/70 backdrop-blur sm:px-6">
+            <p :if={@notification_base_url_configured?}>
+              Notifications will be sent to <span class="font-medium text-base-content">{@notification_base_url}</span>.
+            </p>
+            <p :if={!@notification_base_url_configured?}>
+              Configure <code>:bubbles_notifications</code>
+              with a <code>base_url</code>
+              in <code>config/runtime.exs</code>
+              so the local package knows which API to call.
+            </p>
+          </div>
+
+          <div class="rounded-2xl border border-base-300 bg-base-100/70 px-5 py-4 text-sm text-base-content/60 sm:px-6">
+            Auth tokens are only used for the outgoing request and are not stored by this page.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem]">
+      <div class="rounded-4xl border border-base-300 bg-base-100 p-6 shadow-lg shadow-base-300/20 sm:p-8">
+        <.form
+          for={@form}
+          id="notification-form"
+          action={~p"/notification"}
+          method="post"
+          class="space-y-6"
+        >
+          <div class="grid gap-5 md:grid-cols-2">
+            <.input
+              field={@form[:app_id]}
+              id="notification-app-id"
+              type="number"
+              min="1"
+              label="App ID"
+              placeholder="42"
+              required
+            />
+
+            <.input
+              field={@form[:auth_token]}
+              id="notification-auth-token"
+              type="password"
+              label="Auth token"
+              placeholder="Paste your bearer token"
+              required
+            />
+          </div>
+
+          <.input
+            field={@form[:title]}
+            id="notification-title"
+            type="text"
+            label="Title"
+            placeholder="Important update"
+            required
+          />
+
+          <.input
+            field={@form[:body]}
+            id="notification-body"
+            type="textarea"
+            label="Text"
+            rows="6"
+            placeholder="Write the message you want your users to receive."
+            required
+          />
+
+          <div class="flex flex-col gap-3 border-t border-base-300 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-sm text-base-content/60">
+              The request sends <code>title</code>, <code>body</code>, and an empty
+              <code>data</code>
+              map.
+            </p>
+
+            <.button
+              variant="primary"
+              class="btn btn-primary w-full sm:w-auto transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/20"
+            >
+              <.icon name="hero-paper-airplane" class="size-4" /> Send notification
+            </.button>
+          </div>
+        </.form>
+      </div>
+
+      <aside class="rounded-4xl border border-base-300 bg-base-200/60 p-6 shadow-sm">
+        <div class="space-y-4">
+          <div>
+            <h2 class="text-lg font-semibold text-base-content">Tips</h2>
+            <p class="mt-2 text-sm leading-6 text-base-content/70">
+              Keep titles short, make the body clear, and verify the app ID matches the target application.
+            </p>
+          </div>
+
+          <div class="space-y-3 text-sm text-base-content/65">
+            <div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-3">
+              <p class="font-medium text-base-content">Required fields</p>
+              <p class="mt-1">App ID, auth token, title, and text are all required.</p>
+            </div>
+
+            <div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-3">
+              <p class="font-medium text-base-content">API configuration</p>
+              <p class="mt-1">
+                The page uses the notifications base URL configured in <code>config/runtime.exs</code>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <section
+      :if={@result}
+      id="notification-result"
+      class={[
+        "overflow-hidden rounded-4xl border p-6 shadow-lg sm:p-8",
+        @result.kind == :success && "border-success/20 bg-success/5 shadow-success/10",
+        @result.kind == :error && "border-error/20 bg-error/5 shadow-error/10"
+      ]}
+    >
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p class={[
+            "text-sm font-semibold uppercase tracking-[0.22em]",
+            @result.kind == :success && "text-success",
+            @result.kind == :error && "text-error"
+          ]}>
+            {if(@result.kind == :success, do: "Success", else: "Error")}
+          </p>
+          <h2 class="mt-2 text-2xl font-semibold text-base-content">{@result.title}</h2>
+        </div>
+
+        <div class={[
+          "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium",
+          @result.kind == :success && "bg-success/10 text-success",
+          @result.kind == :error && "bg-error/10 text-error"
+        ]}>
+          <.icon
+            name={if(@result.kind == :success, do: "hero-check-badge", else: "hero-x-circle")}
+            class="size-5"
+          />
+          {if(@result.kind == :success, do: "Notification queued", else: "Needs attention")}
+        </div>
+      </div>
+
+      <div class="mt-6 overflow-hidden rounded-2xl border border-base-300 bg-base-300/50">
+        <pre class="overflow-x-auto px-4 py-4 text-sm leading-6 text-base-content/80">{formatted_result(@result.payload)}</pre>
+      </div>
+    </section>
+  </section>
+</Layouts.app>

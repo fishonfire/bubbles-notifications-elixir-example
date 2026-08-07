@@ -7,6 +7,23 @@ To start your Phoenix server:
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
+## Sending notifications
+
+Open [`/notification`](http://localhost:4000/notification) to use the notification form.
+
+The app is currently configured to send notification requests through the local `bubbles_notifications`
+package using this base URL in `config/runtime.exs`:
+
+```elixir
+config :bubbles_notifications, base_url: "http://localhost:4000"
+```
+
+The configured base URL should point at the server that exposes:
+
+```text
+POST /api/notifications/create
+```
+
 Ready to run in production? Please [check our deployment guides](https://phoenix.hexdocs.pm/deployment.html).
 
 ## Learn more
