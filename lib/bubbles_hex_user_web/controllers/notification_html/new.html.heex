@@ -9,12 +9,16 @@
             </div>
             <div class="space-y-2">
               <h1 class="text-3xl font-semibold tracking-tight text-base-content sm:text-4xl">
-                Send a notification
+                {if(@active_tab == :device, do: "Send a device push", else: "Send a notification")}
               </h1>
               <p class="max-w-2xl text-sm leading-6 text-base-content/70 sm:text-base">
-                Fill in the notification details, app ID, and auth token to send a push message through the local
-                <code>bubbles_notifications</code>
-                package.
+                {if(
+                  @active_tab == :device,
+                  do:
+                    "Target a specific device ID with a title, body, and JSON data payload through the local bubbles_notifications package.",
+                  else:
+                    "Send an app-level notification with a title, body, and JSON data payload through the local bubbles_notifications package."
+                )}
               </p>
             </div>
           </div>
@@ -42,6 +46,34 @@
           </div>
         </div>
 
+        <div class="flex flex-wrap gap-3 rounded-3xl border border-base-300 bg-base-100/70 p-2 shadow-inner shadow-base-300/30">
+          <.link
+            navigate={~p"/notifications"}
+            class={[
+              "inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200",
+              @active_tab == :notification &&
+                "bg-primary text-primary-content shadow-md shadow-primary/20",
+              @active_tab != :notification &&
+                "text-base-content/70 hover:bg-base-200 hover:text-base-content"
+            ]}
+          >
+            <.icon name="hero-megaphone" class="size-4" /> App notification
+          </.link>
+
+          <.link
+            navigate={~p"/push/notifications/device"}
+            class={[
+              "inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200",
+              @active_tab == :device &&
+                "bg-primary text-primary-content shadow-md shadow-primary/20",
+              @active_tab != :device &&
+                "text-base-content/70 hover:bg-base-200 hover:text-base-content"
+            ]}
+          >
+            <.icon name="hero-device-phone-mobile" class="size-4" /> Device push
+          </.link>
+        </div>
+
         <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div class="rounded-2xl border border-base-300 bg-base-100/80 px-5 py-4 text-sm text-base-content/70 backdrop-blur sm:px-6">
             <p :if={@notification_base_url_configured?}>
@@ -66,15 +98,22 @@
       <div class="rounded-4xl border border-base-300 bg-base-100 p-6 shadow-lg shadow-base-300/20 sm:p-8">
         <.form
           for={@form}
-          id="notification-form"
-          action={~p"/notification"}
+          id={if(@active_tab == :device, do: "device-push-form", else: "notification-form")}
+          action={
+            if(@active_tab == :device,
+              do: ~p"/push/notifications/device",
+              else: ~p"/notifications"
+            )
+          }
           method="post"
           class="space-y-6"
         >
           <div class="grid gap-5 md:grid-cols-2">
             <.input
               field={@form[:app_id]}
-              id="notification-app-id"
+              id={
+                if(@active_tab == :device, do: "device-push-app-id", else: "notification-app-id")
+              }
               type="number"
               min="1"
               label="App ID"
@@ -84,7 +123,12 @@
 
             <.input
               field={@form[:auth_token]}
-              id="notification-auth-token"
+              id={
+                if(@active_tab == :device,
+                  do: "device-push-auth-token",
+                  else: "notification-auth-token"
+                )
+              }
               type="password"
               label="Auth token"
               placeholder="Paste your bearer token"
@@ -93,8 +137,18 @@
           </div>
 
           <.input
+            :if={@active_tab == :device}
+            field={@form[:device_id]}
+            id="device-push-device-id"
+            type="text"
+            label="Device ID"
+            placeholder="device-123"
+            required
+          />
+
+          <.input
             field={@form[:title]}
-            id="notification-title"
+            id={if(@active_tab == :device, do: "device-push-title", else: "notification-title")}
             type="text"
             label="Title"
             placeholder="Important update"
@@ -103,7 +157,7 @@
 
           <.input
             field={@form[:body]}
-            id="notification-body"
+            id={if(@active_tab == :device, do: "device-push-body", else: "notification-body")}
             type="textarea"
             label="Text"
             rows="6"
@@ -111,18 +165,36 @@
             required
           />
 
+          <.input
+            field={@form[:data]}
+            id={if(@active_tab == :device, do: "device-push-data", else: "notification-data")}
+            type="textarea"
+            label="Data (JSON)"
+            rows="6"
+            placeholder={
+              if(@active_tab == :device,
+                do: ~s({"screen":"inbox"}),
+                else: ~s({"type":"announcement"})
+              )
+            }
+            required
+          />
+
           <div class="flex flex-col gap-3 border-t border-base-300 pt-6 sm:flex-row sm:items-center sm:justify-between">
             <p class="text-sm text-base-content/60">
-              The request sends <code>title</code>, <code>body</code>, and an empty
-              <code>data</code>
-              map.
+              {if(
+                @active_tab == :device,
+                do: "The request sends title, body, data, and targets one device ID.",
+                else: "The request sends title, body, and data for the selected app ID."
+              )}
             </p>
 
             <.button
               variant="primary"
               class="btn btn-primary w-full sm:w-auto transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/20"
             >
-              <.icon name="hero-paper-airplane" class="size-4" /> Send notification
+              <.icon name="hero-paper-airplane" class="size-4" />
+              {if(@active_tab == :device, do: "Send device push", else: "Send notification")}
             </.button>
           </div>
         </.form>
@@ -133,14 +205,27 @@
           <div>
             <h2 class="text-lg font-semibold text-base-content">Tips</h2>
             <p class="mt-2 text-sm leading-6 text-base-content/70">
-              Keep titles short, make the body clear, and verify the app ID matches the target application.
+              Keep titles short, make the body clear, and send a JSON object in the data field.
             </p>
           </div>
 
           <div class="space-y-3 text-sm text-base-content/65">
             <div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-3">
               <p class="font-medium text-base-content">Required fields</p>
-              <p class="mt-1">App ID, auth token, title, and text are all required.</p>
+              <p class="mt-1">
+                {if(
+                  @active_tab == :device,
+                  do: "App ID, auth token, device ID, title, text, and data are all required.",
+                  else: "App ID, auth token, title, text, and data are all required."
+                )}
+              </p>
+            </div>
+
+            <div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-3">
+              <p class="font-medium text-base-content">Data format</p>
+              <p class="mt-1">
+                Use valid JSON object syntax such as <code phx-no-curly-interpolation>{"screen":"inbox"}</code>.
+              </p>
             </div>
 
             <div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-3">
@@ -184,7 +269,7 @@
             name={if(@result.kind == :success, do: "hero-check-badge", else: "hero-x-circle")}
             class="size-5"
           />
-          {if(@result.kind == :success, do: "Notification queued", else: "Needs attention")}
+          {if(@result.kind == :success, do: "Request queued", else: "Needs attention")}
         </div>
       </div>
 

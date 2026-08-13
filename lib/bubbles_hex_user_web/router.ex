@@ -18,10 +18,10 @@ defmodule BubblesHexUserWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
-    get "/notification", NotificationController, :new
-    post "/notification", NotificationController, :create
     get "/notifications", NotificationController, :new
     post "/notifications", NotificationController, :create
+    get "/push/notifications/device", NotificationController, :device_new
+    post "/push/notifications/device", NotificationController, :device_create
   end
 
   # Other scopes may use custom stacks.
