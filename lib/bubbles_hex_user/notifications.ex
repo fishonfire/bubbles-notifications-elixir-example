@@ -29,7 +29,10 @@ defmodule BubblesHexUser.Notifications do
             end)
 
           {:error, message} ->
-            {:error, :validation, Ecto.Changeset.add_error(changeset, :data, message)}
+            {:error, :validation,
+             changeset
+             |> Ecto.Changeset.add_error(:data, message)
+             |> Map.put(:action, :insert)}
         end
 
       {:error, changeset} ->
@@ -60,7 +63,10 @@ defmodule BubblesHexUser.Notifications do
             end)
 
           {:error, message} ->
-            {:error, :validation, Ecto.Changeset.add_error(changeset, :data, message)}
+            {:error, :validation,
+             changeset
+             |> Ecto.Changeset.add_error(:data, message)
+             |> Map.put(:action, :insert)}
         end
 
       {:error, changeset} ->
