@@ -187,7 +187,6 @@
               label="User IDs"
               rows="5"
               placeholder="user1, galaxy DG56, user 3"
-              required
             />
 
             <.input
@@ -197,7 +196,6 @@
               label="Aliases"
               rows="5"
               placeholder="alias1, alias2, alias3"
-              required
             />
           </div>
 
@@ -260,7 +258,7 @@
                 <% :device -> %>
                   The request sends title, body, data, and targets one device ID.
                 <% :user_id_alias -> %>
-                  The request sends title, body, data, user IDs, and aliases for the selected app ID.
+                  The request sends title, body, data, and whichever user IDs or aliases you provide.
                 <% :notification -> %>
                   The request sends title, body, and data for the selected app ID.
               <% end %>
@@ -301,7 +299,7 @@
                   <% :device -> %>
                     App ID, auth token, device ID, title, text, and data are all required.
                   <% :user_id_alias -> %>
-                    App ID, auth token, user IDs, aliases, title, text, and data are all required.
+                    App ID, auth token, title, text, data, and at least one user ID or alias are required.
                   <% :notification -> %>
                     App ID, auth token, title, text, and data are all required.
                 <% end %>

@@ -85,11 +85,10 @@ defmodule BubblesHexUser.Notifications do
 
     case Ecto.Changeset.apply_action(changeset, :insert) do
       {:ok, user_id_alias_push} ->
-        with {:ok, data} <- parse_data_map(user_id_alias_push.data),
-             {:ok, user_ids} <-
-               parse_required_list(user_id_alias_push.user_ids, :user_ids, "user IDs"),
-             {:ok, aliases} <-
-               parse_required_list(user_id_alias_push.aliases, :aliases, "aliases") do
+        with {:ok, data} <- parse_data_map(user_id_alias_push.data) do
+          user_ids = parse_optional_list(user_id_alias_push.user_ids)
+          aliases = parse_optional_list(user_id_alias_push.aliases)
+
           send_with_client(
             user_id_alias_push.app_id,
             user_id_alias_push.auth_token,
@@ -106,12 +105,6 @@ defmodule BubblesHexUser.Notifications do
             {:error, :validation,
              changeset
              |> Ecto.Changeset.add_error(:data, message)
-             |> Map.put(:action, :insert)}
-
-          {:error, field, message} ->
-            {:error, :validation,
-             changeset
-             |> Ecto.Changeset.add_error(field, message)
              |> Map.put(:action, :insert)}
         end
 
@@ -154,18 +147,14 @@ defmodule BubblesHexUser.Notifications do
     end
   end
 
-  defp parse_required_list(value, field, label) do
-    items =
-      value
-      |> String.split([",", "\n"], trim: true)
-      |> Enum.map(&String.trim/1)
-      |> Enum.reject(&(&1 == ""))
-
-    case items do
-      [] -> {:error, field, "must include at least one #{label}"}
-      items -> {:ok, items}
-    end
+  defp parse_optional_list(value) when is_binary(value) do
+    value
+    |> String.split([",", "\n"], trim: true)
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
   end
+
+  defp parse_optional_list(_value), do: []
 
   defp normalize_send_result({:ok, response}) when is_map(response), do: {:ok, response}
   defp normalize_send_result({:error, error}), do: {:error, :send, error}

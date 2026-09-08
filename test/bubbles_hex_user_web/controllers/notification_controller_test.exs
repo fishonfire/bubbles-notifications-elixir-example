@@ -180,6 +180,26 @@ defmodule BubblesHexUserWeb.NotificationControllerTest do
     assert html =~ "must be a JSON object"
   end
 
+  test "POST /user-id/alias with no targets shows validation errors", %{conn: conn} do
+    conn =
+      post(conn, ~p"/user-id/alias", %{
+        "user_id_alias_push" => %{
+          "app_id" => "42",
+          "auth_token" => "secret-token",
+          "user_ids" => "",
+          "aliases" => "",
+          "title" => "Segment ping",
+          "body" => "This message targets matching users and aliases.",
+          "data" => ~s({"screen":"inbox"})
+        }
+      })
+
+    html = html_response(conn, 422)
+
+    assert html =~ "Send by user ID and alias"
+    assert html =~ "must include at least one user ID or alias"
+  end
+
   test "POST /user-id/alias sends a user ID and alias push and renders the API response", %{
     conn: conn
   } do
@@ -213,6 +233,38 @@ defmodule BubblesHexUserWeb.NotificationControllerTest do
     assert html =~ "team:eng"
     assert html =~ "beta"
     assert html =~ "inbox"
+  end
+
+  test "POST /user-id/alias sends an alias-only push and renders an empty user IDs array", %{
+    conn: conn
+  } do
+    Application.put_env(
+      :bubbles_hex_user,
+      :notifications_client,
+      BubblesHexUser.NotificationsClientStub
+    )
+
+    Application.put_env(:bubbles_notifications, :base_url, "http://example.test")
+
+    conn =
+      post(conn, ~p"/user-id/alias", %{
+        "user_id_alias_push" => %{
+          "app_id" => "42",
+          "auth_token" => "secret-token",
+          "user_ids" => "",
+          "aliases" => "alias1, alias2",
+          "title" => "Alias ping",
+          "body" => "This message targets aliases only.",
+          "data" => ~s({"screen":"inbox"})
+        }
+      })
+
+    html = html_response(conn, 200)
+
+    assert html =~ "User ID and alias push sent successfully."
+    assert html =~ ~s(&quot;user_ids&quot;: [])
+    assert html =~ "alias1"
+    assert html =~ "alias2"
   end
 
   defp restore_env(app, key, nil), do: Application.delete_env(app, key)
