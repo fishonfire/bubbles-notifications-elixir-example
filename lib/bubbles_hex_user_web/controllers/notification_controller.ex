@@ -97,6 +97,56 @@ defmodule BubblesHexUserWeb.NotificationController do
     end
   end
 
+  def user_id_alias_new(conn, _params) do
+    render_notification_page(conn,
+      active_tab: :user_id_alias,
+      form: user_id_alias_push_form(Notifications.change_user_id_alias_push()),
+      result: nil
+    )
+  end
+
+  def user_id_alias_create(conn, %{"user_id_alias_push" => user_id_alias_push_params}) do
+    case Notifications.send_user_id_alias_push(user_id_alias_push_params) do
+      {:ok, response} ->
+        conn
+        |> put_flash(:info, "User ID and alias push sent successfully.")
+        |> render_notification_page(
+          active_tab: :user_id_alias,
+          form: user_id_alias_push_form(Notifications.change_user_id_alias_push()),
+          result: %{
+            kind: :success,
+            title: "User ID and alias push accepted by the API",
+            payload: response
+          }
+        )
+
+      {:error, :validation, changeset} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> render_notification_page(
+          active_tab: :user_id_alias,
+          form: user_id_alias_push_form(changeset),
+          result: nil
+        )
+
+      {:error, :send, error} ->
+        conn
+        |> put_flash(:error, notification_error_message(error))
+        |> render_notification_page(
+          active_tab: :user_id_alias,
+          form:
+            user_id_alias_push_form(
+              Notifications.change_user_id_alias_push(user_id_alias_push_params)
+            ),
+          result: %{
+            kind: :error,
+            title: "User ID and alias push request failed",
+            payload: normalize_error(error)
+          }
+        )
+    end
+  end
+
   defp render_notification_page(conn, assigns) do
     render(conn, :new,
       active_tab: Keyword.fetch!(assigns, :active_tab),
@@ -109,6 +159,9 @@ defmodule BubblesHexUserWeb.NotificationController do
 
   defp notification_form(changeset), do: Phoenix.Component.to_form(changeset)
   defp device_push_form(changeset), do: Phoenix.Component.to_form(changeset, as: :device_push)
+
+  defp user_id_alias_push_form(changeset),
+    do: Phoenix.Component.to_form(changeset, as: :user_id_alias_push)
 
   defp notification_error_message(%{status: status}) do
     "Notification request failed with status #{status}."

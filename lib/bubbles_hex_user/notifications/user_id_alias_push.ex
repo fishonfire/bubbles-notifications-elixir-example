@@ -1,0 +1,31 @@
+defmodule BubblesHexUser.Notifications.UserIdAliasPush do
+  use Ecto.Schema
+
+  import Ecto.Changeset
+
+  @primary_key false
+  @type t :: %__MODULE__{}
+
+  embedded_schema do
+    field :app_id, :integer
+    field :auth_token, :string
+    field :user_ids, :string
+    field :aliases, :string
+    field :title, :string
+    field :body, :string
+    field :data, :string
+  end
+
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  def changeset(user_id_alias_push, attrs) do
+    user_id_alias_push
+    |> cast(attrs, [:app_id, :auth_token, :user_ids, :aliases, :title, :body, :data])
+    |> validate_required([:app_id, :auth_token, :user_ids, :aliases, :title, :body, :data])
+    |> validate_number(:app_id, greater_than: 0)
+    |> validate_length(:user_ids, min: 1, max: 5_000)
+    |> validate_length(:aliases, min: 1, max: 5_000)
+    |> validate_length(:title, max: 120)
+    |> validate_length(:body, max: 1_000)
+    |> validate_length(:data, max: 5_000)
+  end
+end

@@ -1,5 +1,5 @@
 defmodule BubblesHexUser.Notifications do
-  alias BubblesHexUser.Notifications.{DevicePush, Notification}
+  alias BubblesHexUser.Notifications.{DevicePush, Notification, UserIdAliasPush}
 
   @type send_result ::
           {:ok, map()}
@@ -74,6 +74,52 @@ defmodule BubblesHexUser.Notifications do
     end
   end
 
+  @spec change_user_id_alias_push(map()) :: Ecto.Changeset.t()
+  def change_user_id_alias_push(attrs \\ %{}) do
+    UserIdAliasPush.changeset(%UserIdAliasPush{}, attrs)
+  end
+
+  @spec send_user_id_alias_push(map()) :: send_result()
+  def send_user_id_alias_push(attrs) do
+    changeset = change_user_id_alias_push(attrs)
+
+    case Ecto.Changeset.apply_action(changeset, :insert) do
+      {:ok, user_id_alias_push} ->
+        with {:ok, data} <- parse_data_map(user_id_alias_push.data),
+             {:ok, user_ids} <-
+               parse_required_list(user_id_alias_push.user_ids, :user_ids, "user IDs"),
+             {:ok, aliases} <-
+               parse_required_list(user_id_alias_push.aliases, :aliases, "aliases") do
+          send_with_client(
+            user_id_alias_push.app_id,
+            user_id_alias_push.auth_token,
+            fn client_module, client ->
+              client_module.create_notification_user_ids_aliases(client, user_ids, aliases, %{
+                title: user_id_alias_push.title,
+                body: user_id_alias_push.body,
+                data: data
+              })
+            end
+          )
+        else
+          {:error, message} ->
+            {:error, :validation,
+             changeset
+             |> Ecto.Changeset.add_error(:data, message)
+             |> Map.put(:action, :insert)}
+
+          {:error, field, message} ->
+            {:error, :validation,
+             changeset
+             |> Ecto.Changeset.add_error(field, message)
+             |> Map.put(:action, :insert)}
+        end
+
+      {:error, changeset} ->
+        {:error, :validation, changeset}
+    end
+  end
+
   @spec base_url() :: String.t() | nil
   def base_url do
     Application.get_env(:bubbles_notifications, :base_url)
@@ -105,6 +151,19 @@ defmodule BubblesHexUser.Notifications do
       {:ok, decoded} when is_map(decoded) -> {:ok, decoded}
       {:ok, _decoded} -> {:error, "must be a JSON object"}
       {:error, _reason} -> {:error, "must be valid JSON"}
+    end
+  end
+
+  defp parse_required_list(value, field, label) do
+    items =
+      value
+      |> String.split([",", "\n"], trim: true)
+      |> Enum.map(&String.trim/1)
+      |> Enum.reject(&(&1 == ""))
+
+    case items do
+      [] -> {:error, field, "must include at least one #{label}"}
+      items -> {:ok, items}
     end
   end
 

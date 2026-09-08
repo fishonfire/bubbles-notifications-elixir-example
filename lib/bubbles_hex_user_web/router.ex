@@ -20,6 +20,8 @@ defmodule BubblesHexUserWeb.Router do
     get "/", PageController, :home
     get "/notifications", NotificationController, :new
     post "/notifications", NotificationController, :create
+    get "/user-id/alias", NotificationController, :user_id_alias_new
+    post "/user-id/alias", NotificationController, :user_id_alias_create
     get "/push/notifications/device", NotificationController, :device_new
     post "/push/notifications/device", NotificationController, :device_create
   end

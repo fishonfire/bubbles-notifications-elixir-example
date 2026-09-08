@@ -9,16 +9,24 @@
             </div>
             <div class="space-y-2">
               <h1 class="text-3xl font-semibold tracking-tight text-base-content sm:text-4xl">
-                {if(@active_tab == :device, do: "Send a device push", else: "Send a notification")}
+                <%= case @active_tab do %>
+                  <% :device -> %>
+                    Send a device push
+                  <% :user_id_alias -> %>
+                    Send by user ID and alias
+                  <% :notification -> %>
+                    Send a notification
+                <% end %>
               </h1>
               <p class="max-w-2xl text-sm leading-6 text-base-content/70 sm:text-base">
-                {if(
-                  @active_tab == :device,
-                  do:
-                    "Target a specific device ID with a title, body, and JSON data payload through the local bubbles_notifications package.",
-                  else:
-                    "Send an app-level notification with a title, body, and JSON data payload through the local bubbles_notifications package."
-                )}
+                <%= case @active_tab do %>
+                  <% :device -> %>
+                    Target a specific device ID with a title, body, and JSON data payload through the local bubbles_notifications package.
+                  <% :user_id_alias -> %>
+                    Target devices by user IDs and aliases with a title, body, and JSON data payload through the local bubbles_notifications package.
+                  <% :notification -> %>
+                    Send an app-level notification with a title, body, and JSON data payload through the local bubbles_notifications package.
+                <% end %>
               </p>
             </div>
           </div>
@@ -72,6 +80,19 @@
           >
             <.icon name="hero-device-phone-mobile" class="size-4" /> Device push
           </.link>
+
+          <.link
+            navigate={~p"/user-id/alias"}
+            class={[
+              "inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200",
+              @active_tab == :user_id_alias &&
+                "bg-primary text-primary-content shadow-md shadow-primary/20",
+              @active_tab != :user_id_alias &&
+                "text-base-content/70 hover:bg-base-200 hover:text-base-content"
+            ]}
+          >
+            <.icon name="hero-user-group" class="size-4" /> User ID / alias
+          </.link>
         </div>
 
         <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
@@ -98,12 +119,19 @@
       <div class="rounded-4xl border border-base-300 bg-base-100 p-6 shadow-lg shadow-base-300/20 sm:p-8">
         <.form
           for={@form}
-          id={if(@active_tab == :device, do: "device-push-form", else: "notification-form")}
+          id={
+            case @active_tab do
+              :device -> "device-push-form"
+              :user_id_alias -> "user-id-alias-push-form"
+              :notification -> "notification-form"
+            end
+          }
           action={
-            if(@active_tab == :device,
-              do: ~p"/push/notifications/device",
-              else: ~p"/notifications"
-            )
+            case @active_tab do
+              :device -> ~p"/push/notifications/device"
+              :user_id_alias -> ~p"/user-id/alias"
+              :notification -> ~p"/notifications"
+            end
           }
           method="post"
           class="space-y-6"
@@ -112,7 +140,11 @@
             <.input
               field={@form[:app_id]}
               id={
-                if(@active_tab == :device, do: "device-push-app-id", else: "notification-app-id")
+                case @active_tab do
+                  :device -> "device-push-app-id"
+                  :user_id_alias -> "user-id-alias-push-app-id"
+                  :notification -> "notification-app-id"
+                end
               }
               type="number"
               min="1"
@@ -124,10 +156,11 @@
             <.input
               field={@form[:auth_token]}
               id={
-                if(@active_tab == :device,
-                  do: "device-push-auth-token",
-                  else: "notification-auth-token"
-                )
+                case @active_tab do
+                  :device -> "device-push-auth-token"
+                  :user_id_alias -> "user-id-alias-push-auth-token"
+                  :notification -> "notification-auth-token"
+                end
               }
               type="password"
               label="Auth token"
@@ -146,9 +179,37 @@
             required
           />
 
+          <div :if={@active_tab == :user_id_alias} class="grid gap-5 md:grid-cols-2">
+            <.input
+              field={@form[:user_ids]}
+              id="user-id-alias-push-user-ids"
+              type="textarea"
+              label="User IDs"
+              rows="5"
+              placeholder="user1, galaxy DG56, user 3"
+              required
+            />
+
+            <.input
+              field={@form[:aliases]}
+              id="user-id-alias-push-aliases"
+              type="textarea"
+              label="Aliases"
+              rows="5"
+              placeholder="alias1, alias2, alias3"
+              required
+            />
+          </div>
+
           <.input
             field={@form[:title]}
-            id={if(@active_tab == :device, do: "device-push-title", else: "notification-title")}
+            id={
+              case @active_tab do
+                :device -> "device-push-title"
+                :user_id_alias -> "user-id-alias-push-title"
+                :notification -> "notification-title"
+              end
+            }
             type="text"
             label="Title"
             placeholder="Important update"
@@ -157,7 +218,13 @@
 
           <.input
             field={@form[:body]}
-            id={if(@active_tab == :device, do: "device-push-body", else: "notification-body")}
+            id={
+              case @active_tab do
+                :device -> "device-push-body"
+                :user_id_alias -> "user-id-alias-push-body"
+                :notification -> "notification-body"
+              end
+            }
             type="textarea"
             label="Text"
             rows="6"
@@ -167,26 +234,36 @@
 
           <.input
             field={@form[:data]}
-            id={if(@active_tab == :device, do: "device-push-data", else: "notification-data")}
+            id={
+              case @active_tab do
+                :device -> "device-push-data"
+                :user_id_alias -> "user-id-alias-push-data"
+                :notification -> "notification-data"
+              end
+            }
             type="textarea"
             label="Data (JSON)"
             rows="6"
             placeholder={
-              if(@active_tab == :device,
-                do: ~s({"screen":"inbox"}),
-                else: ~s({"type":"announcement"})
-              )
+              case @active_tab do
+                :device -> ~s({"screen":"inbox"})
+                :user_id_alias -> ~s({"type":"segment"})
+                :notification -> ~s({"type":"announcement"})
+              end
             }
             required
           />
 
           <div class="flex flex-col gap-3 border-t border-base-300 pt-6 sm:flex-row sm:items-center sm:justify-between">
             <p class="text-sm text-base-content/60">
-              {if(
-                @active_tab == :device,
-                do: "The request sends title, body, data, and targets one device ID.",
-                else: "The request sends title, body, and data for the selected app ID."
-              )}
+              <%= case @active_tab do %>
+                <% :device -> %>
+                  The request sends title, body, data, and targets one device ID.
+                <% :user_id_alias -> %>
+                  The request sends title, body, data, user IDs, and aliases for the selected app ID.
+                <% :notification -> %>
+                  The request sends title, body, and data for the selected app ID.
+              <% end %>
             </p>
 
             <.button
@@ -194,7 +271,14 @@
               class="btn btn-primary w-full sm:w-auto transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/20"
             >
               <.icon name="hero-paper-airplane" class="size-4" />
-              {if(@active_tab == :device, do: "Send device push", else: "Send notification")}
+              <%= case @active_tab do %>
+                <% :device -> %>
+                  Send device push
+                <% :user_id_alias -> %>
+                  Send user ID / alias push
+                <% :notification -> %>
+                  Send notification
+              <% end %>
             </.button>
           </div>
         </.form>
@@ -213,11 +297,14 @@
             <div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-3">
               <p class="font-medium text-base-content">Required fields</p>
               <p class="mt-1">
-                {if(
-                  @active_tab == :device,
-                  do: "App ID, auth token, device ID, title, text, and data are all required.",
-                  else: "App ID, auth token, title, text, and data are all required."
-                )}
+                <%= case @active_tab do %>
+                  <% :device -> %>
+                    App ID, auth token, device ID, title, text, and data are all required.
+                  <% :user_id_alias -> %>
+                    App ID, auth token, user IDs, aliases, title, text, and data are all required.
+                  <% :notification -> %>
+                    App ID, auth token, title, text, and data are all required.
+                <% end %>
               </p>
             </div>
 

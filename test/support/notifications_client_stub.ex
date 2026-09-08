@@ -28,4 +28,17 @@ defmodule BubblesHexUser.NotificationsClientStub do
        "data" => attrs[:data]
      }}
   end
+
+  def create_notification_user_ids_aliases(client, user_ids, aliases, attrs) do
+    {:ok,
+     %{
+       "status" => "queued",
+       "app_id" => client.app_id,
+       "user_ids" => user_ids,
+       "aliases" => aliases,
+       "title" => attrs[:title],
+       "body" => attrs[:body],
+       "data" => attrs[:data]
+     }}
+  end
 end
